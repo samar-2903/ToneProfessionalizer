@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tone Professionalizer</title>
+    <style>
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-tertiary: #e9ecef;
+            --text-primary: #000000;
+            --text-secondary: #495057;
+            --text-muted: #6c757d;
+            --border-color: #dee2e6;
+            --button-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --button-hover: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+            --accent-color: #667eea;
+            --pattern-color: rgba(102, 126, 234, 0.03);
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #252525;
+            --bg-tertiary: #1e1e1e;
+            --text-primary: #d4d4d4;
+            --text-secondary: #888;
+            --text-muted: #666;
+            --border-color: #333;
+            --button-bg: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+            --button-hover: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+            --accent-color: #555;
+            --pattern-color: rgba(85, 85, 85, 0.05);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 20px;
+            line-height: 1.6;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(circle at 25% 25%, var(--pattern-color) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, var(--pattern-color) 0%, transparent 50%),
+                linear-gradient(45deg, transparent 24%, var(--pattern-color) 25%, var(--pattern-color) 26%, transparent 27%, transparent 74%, var(--pattern-color) 75%, var(--pattern-color) 76%, transparent 77%),
+                linear-gradient(-45deg, transparent 24%, var(--pattern-color) 25%, var(--pattern-color) 26%, transparent 27%, transparent 74%, var(--pattern-color) 75%, var(--pattern-color) 76%, transparent 77%);
+            background-size: 50px 50px, 50px 50px, 100px 100px, 100px 100px;
+            background-position: 0 0, 0 0, 0 0, 0 0;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 0;
+            right: 0;
+            display: flex;
+            gap: 8px;
+            z-index: 10;
+        }
+
+        .theme-btn {
+            padding: 8px 16px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-secondary);
+            color: var(--text-secondary);
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .theme-btn.active {
+            background-color: var(--accent-color);
+            color: var(--bg-primary);
+            border-color: var(--accent-color);
+        }
+
+        .theme-btn:hover:not(.active) {
+            background-color: var(--bg-tertiary);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .title {
+            font-size: 32px;
+            font-weight: 300;
+            color: var(--text-primary);
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 16px;
+            color: var(--text-secondary);
+            font-weight: 300;
+        }
+
+        .state-narrative {
+            font-size: 13px;
+            color: var(--text-muted);
+            text-align: center;
+            margin-top: 10px;
+            min-height: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            border-bottom: 1px solid #333;
+        }
+
+        .tab {
+            background: none;
+            border: none;
+            padding: 12px 24px;
+            color: var(--text-secondary);
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+        }
+
+        .tab:hover {
+            color: var(--text-primary);
+        }
+
+        .tab.active {
+            color: var(--text-primary);
+            border-bottom-color: var(--accent-color);
+        }
+
+        .columns {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .column {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .column-title {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .revision-counter {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: none;
+            letter-spacing: normal;
+        }
+
+        .controls, .options {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .textarea-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .copy-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(102, 126, 234, 0.9);
+            border: none;
+            border-radius: 4px;
+            padding: 6px 8px;
+            color: #ffffff;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: Arial, sans-serif;
+        }
+
+        .copy-button:hover {
+            background: rgba(90, 103, 216, 0.9);
+        }
+
+        .copy-button.copied {
+            color: #4CAF50;
+            background: rgba(76, 175, 80, 0.9);
+        }
+
+        .output-wrapper {
+            position: relative;
+        }
+
+        .output-highlight {
+            animation: highlightBorder 0.3s ease;
+        }
+
+        @keyframes highlightBorder {
+            0% { border-color: var(--border-color); }
+            50% { border-color: var(--accent-color); }
+            100% { border-color: var(--border-color); }
+        }
+
+        .purpose-hint {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .purpose-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .keyboard-hint {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 5px;
+        }
+
+        .input-section {
+            margin-bottom: 30px;
+        }
+
+        .textarea {
+            width: 100%;
+            height: 300px;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            color: var(--text-primary);
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s ease;
+            flex: 1;
+        }
+
+        .textarea:focus {
+            border-color: var(--accent-color);
+        }
+
+        .textarea::placeholder {
+            color: var(--text-muted);
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .dropdown {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 10px 12px;
+            color: var(--text-primary);
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            outline: none;
+            cursor: pointer;
+            transition: border-color 0.2s ease;
+        }
+
+        .dropdown:focus {
+            border-color: var(--accent-color);
+        }
+
+        .button {
+            background: var(--button-bg);
+            border: none;
+            border-radius: 6px;
+            padding: 10px 20px;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .button:hover:not(:disabled) {
+            background: var(--button-hover);
+            transform: translateY(-1px);
+        }
+
+        .button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .primary-button {
+            background-color: #2a2a2a;
+            border-color: #555;
+        }
+
+        .primary-button:hover:not(:disabled) {
+            background-color: #333;
+            border-color: #666;
+        }
+
+        .output-section {
+            margin-bottom: 30px;
+            display: none;
+        }
+
+        .output-textarea {
+            width: 100%;
+            height: 300px;
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            color: var(--text-primary);
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.3s ease;
+            flex: 1;
+        }
+
+        .output-textarea:empty::before {
+            content: attr(placeholder);
+            color: var(--text-muted);
+        }
+
+        .options {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .error {
+            color: #dc3545;
+            font-size: 14px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .loading {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-top: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="theme-toggle">
+            <button class="theme-btn active" data-theme="light">Light</button>
+            <button class="theme-btn" data-theme="dark">Dark</button>
+        </div>
+        
+        <div class="header">
+            <h1 class="title">Tone Professionalizer</h1>
+            <p class="subtitle">Transform your text with professional tone adjustments</p>
+            <div id="stateNarrative" class="state-narrative">Select a tone and paste your text to begin.</div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" data-tone="corporate">Corporate</button>
+            <button class="tab" data-tone="academic">Academic</button>
+            <button class="tab" data-tone="political">Political</button>
+        </div>
+
+        <div class="columns">
+            <div class="column">
+                <div class="column-title">Original Text</div>
+                <div class="purpose-hint">
+                    <span class="purpose-label">Purpose:</span>
+                    <select id="purposeSelect" class="dropdown" style="width: auto;">
+                        <option value="general">General</option>
+                        <option value="email">Email</option>
+                        <option value="public-statement">Public statement</option>
+                    </select>
+                </div>
+                <div class="controls">
+                    <button id="generateBtn" class="button primary-button">Professionalize</button>
+                    <div class="keyboard-hint">Ctrl + Enter to process</div>
+                </div>
+                <div class="textarea-container">
+                    <textarea 
+                        id="inputText" 
+                        class="textarea" 
+                        placeholder="Please paste your text here"
+                    ></textarea>
+                </div>
+            </div>
+            
+            <div class="column">
+                <div class="column-title">
+                    <span>Professionalized Text</span>
+                    <span id="revisionCounter" class="revision-counter" style="display: none;">Revision 1</span>
+                </div>
+                <div class="options">
+                    <button id="refineBtn" class="button" disabled>Refine</button>
+                    <button id="changeToneBtn" class="button" disabled>Change tone</button>
+                    <button id="newTextBtn" class="button" disabled>New text</button>
+                    <div class="keyboard-hint">Ctrl + Shift + Enter to refine</div>
+                </div>
+                <div class="textarea-container">
+                    <div class="output-wrapper">
+                        <textarea id="outputText" class="output-textarea" readonly placeholder="Your professionalized text will appear here..."></textarea>
+                        <button id="copyBtn" class="copy-button">Copy</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="error" class="error"></div>
+        <div id="loading" class="loading">Processing...</div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://127.0.0.1:8000';
+        
+        const elements = {
+            inputText: document.getElementById('inputText'),
+            outputText: document.getElementById('outputText'),
+            generateBtn: document.getElementById('generateBtn'),
+            refineBtn: document.getElementById('refineBtn'),
+            changeToneBtn: document.getElementById('changeToneBtn'),
+            newTextBtn: document.getElementById('newTextBtn'),
+            copyBtn: document.getElementById('copyBtn'),
+            purposeSelect: document.getElementById('purposeSelect'),
+            error: document.getElementById('error'),
+            loading: document.getElementById('loading'),
+            tabs: document.querySelectorAll('.tab'),
+            stateNarrative: document.getElementById('stateNarrative'),
+            revisionCounter: document.getElementById('revisionCounter'),
+            themeButtons: document.querySelectorAll('.theme-btn')
+        };
+
+        let currentOutput = '';
+        let selectedTone = 'corporate';
+        let revisionCount = 0;
+
+        // Theme Toggle Functionality
+        function setTheme(theme) {
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+            }
+            localStorage.setItem('theme', theme);
+            
+            elements.themeButtons.forEach(button => {
+                if (button.dataset.theme === theme) {
+                    button.classList.add('active');
+                } else {
+                    button.classList.remove('active');
+                }
+            });
+        }
+
+        // Set initial theme
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        setTheme(savedTheme);
+
+        // Theme toggle event listeners
+        elements.themeButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                setTheme(button.dataset.theme);
+            });
+        });
+
+        function updateStateNarrative(text) {
+            elements.stateNarrative.textContent = text;
+        }
+
+        function updateRevisionCounter() {
+            if (revisionCount > 0) {
+                elements.revisionCounter.textContent = `Revision ${revisionCount}`;
+                elements.revisionCounter.style.display = 'inline';
+            }
+        }
+
+        function highlightOutput() {
+            elements.outputText.classList.add('output-highlight');
+            setTimeout(() => {
+                elements.outputText.classList.remove('output-highlight');
+            }, 300);
+        }
+
+        function setLoading(isLoading) {
+            elements.loading.style.display = isLoading ? 'block' : 'none';
+            elements.generateBtn.disabled = isLoading;
+            elements.refineBtn.disabled = isLoading || !currentOutput;
+            elements.changeToneBtn.disabled = isLoading || !currentOutput;
+            elements.newTextBtn.disabled = isLoading;
+        }
+
+        function showError(message) {
+            elements.error.textContent = message;
+            elements.error.style.display = 'block';
+            setTimeout(() => {
+                elements.error.style.display = 'none';
+            }, 5000);
+        }
+
+        function setActiveTab(tone) {
+            elements.tabs.forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.dataset.tone === tone) {
+                    tab.classList.add('active');
+                }
+            });
+            selectedTone = tone;
+        }
+
+        async function callAPI(endpoint, data) {
+            try {
+                const response = await fetch(`${API_BASE}${endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('API call failed:', error);
+                throw error;
+            }
+        }
+
+        async function professionalize() {
+            const inputText = elements.inputText.value.trim();
+
+            if (!inputText) {
+                showError('Please enter some text to professionalize');
+                return;
+            }
+
+            setLoading(true);
+            elements.error.style.display = 'none';
+            updateStateNarrative('Professionalizing tone...');
+
+            try {
+                const result = await callAPI('/professionalize', {
+                    input_text: inputText,
+                    text_type: selectedTone
+                });
+
+                currentOutput = result.professional_text;
+                elements.outputText.value = currentOutput;
+                revisionCount = 1;
+                updateRevisionCounter();
+                highlightOutput();
+                updateStateNarrative('You can refine further or change the tone.');
+                
+                // Enable buttons after successful generation
+                elements.refineBtn.disabled = false;
+                elements.changeToneBtn.disabled = false;
+                elements.newTextBtn.disabled = false;
+                elements.copyBtn.style.display = 'block';
+
+            } catch (error) {
+                showError('Failed to professionalize text. Please try again.');
+                updateStateNarrative('Select a tone and paste your text to begin.');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        async function refine() {
+            if (!currentOutput) {
+                showError('No text to refine');
+                return;
+            }
+
+            setLoading(true);
+            elements.error.style.display = 'none';
+            updateStateNarrative('Refining text...');
+
+            try {
+                const result = await callAPI('/refine', {
+                    input_text: currentOutput,
+                    text_type: selectedTone
+                });
+
+                currentOutput = result.professional_text;
+                elements.outputText.value = currentOutput;
+                revisionCount++;
+                updateRevisionCounter();
+                highlightOutput();
+                updateStateNarrative('You can refine further or change the tone.');
+
+            } catch (error) {
+                showError('Failed to refine text. Please try again.');
+                updateStateNarrative('You can refine further or change the tone.');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        function changeTone() {
+            professionalize();
+        }
+
+        function newText() {
+            elements.inputText.value = '';
+            elements.outputText.value = '';
+            currentOutput = '';
+            revisionCount = 0;
+            elements.revisionCounter.style.display = 'none';
+            elements.error.style.display = 'none';
+            elements.refineBtn.disabled = true;
+            elements.changeToneBtn.disabled = true;
+            elements.newTextBtn.disabled = true;
+            elements.copyBtn.style.display = 'none';
+            updateStateNarrative('Select a tone and paste your text to begin.');
+        }
+
+        async function copyToClipboard() {
+            try {
+                await navigator.clipboard.writeText(currentOutput);
+                elements.copyBtn.textContent = 'Copied.';
+                elements.copyBtn.classList.add('copied');
+                
+                setTimeout(() => {
+                    elements.copyBtn.textContent = 'Copy';
+                    elements.copyBtn.classList.remove('copied');
+                }, 2000);
+            } catch (err) {
+                showError('Failed to copy text');
+            }
+        }
+
+        // Event listeners
+        elements.generateBtn.addEventListener('click', professionalize);
+        elements.refineBtn.addEventListener('click', refine);
+        elements.changeToneBtn.addEventListener('click', changeTone);
+        elements.newTextBtn.addEventListener('click', newText);
+        elements.copyBtn.addEventListener('click', copyToClipboard);
+
+        // Tab click handlers
+        elements.tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                setActiveTab(tab.dataset.tone);
+                if (elements.inputText.value.trim()) {
+                    professionalize();
+                }
+            });
+        });
+
+        // Keyboard shortcuts
+        elements.inputText.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                professionalize();
+            } else if (e.ctrlKey && e.shiftKey && e.key === 'Enter') {
+                e.preventDefault();
+                if (currentOutput) {
+                    refine();
+                }
+            } else if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                professionalize();
+            }
+        });
+
+        // Input change handler
+        elements.inputText.addEventListener('input', () => {
+            if (elements.inputText.value.trim()) {
+                updateStateNarrative('Ready to professionalize your text.');
+            } else {
+                updateStateNarrative('Select a tone and paste your text to begin.');
+            }
+        });
+
+        // Initialize copy button as hidden
+        elements.copyBtn.style.display = 'none';
+    </script>
+</body>
+</html>
